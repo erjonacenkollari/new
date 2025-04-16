@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Regjistrimi i Pacientëve</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,500,700" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="test1.css">
+</head>
+<body>
+    <div class="row">
+        <header class="text-center col-12">
+            <h1><strong>Ne kujdesemi për pasurinë tuaj më të madhe, SHËNDETIN!</strong></h1>
+        </header>
+        <div class="container">
+            <h3><strong>Regjistrohu si pacient</strong></h3>
+            <form id="patientForm">
+                <div class="form-group">
+                    <input type="text" id="name" class="form-control" placeholder="Emri dhe Mbiemri" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="email" class="form-control" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="tel" id="telefon" class="form-control" placeholder="Numri i telefonit" required>
+                </div>
+                <div class="form-group">
+                    <input type="date" id="date" class="form-control" name="data_takimit" required>
+                </div>
+                <div class="form-group">
+                    <input type="time" id="time" class="form-control"  name="ora_takimit" required>
+                </div>
+                <div class="form-group">
+                    <select id="lloji_vizites" class="form-control" name="lloji_vizites" required>
+                        <option value="">Zgjidh llojin e vizitës</option>
+                        <option value="Konsultë">Vizita mjekesore</option>
+                        <option value="Analiza_Lab">Analiza Laboratorike</option>
+                        <option value="Radiografi">Radiografi</option>
+                        <option value="Ekografi">Ekografi</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Rezervo Takimin</button>
+                <input type="reset" class="btn btn-secondary" value="Pastro">
+            </form>   
+        </div>
+
+        <div class="content-box">
+            <h3 class="mt-4">Lista e Pacientëve</h3>
+            <table class="table table-bordered table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Emri</th>
+                        <th>Mbiemri</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        <th>Data</th>
+                        <th>Ora</th>
+                        <th>Lloji i Vizitës</th>
+                        <th>Veprime</th>
+                    </tr>
+                </thead>
+                <tbody id="patientList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer class="text-center mt-4 p-3" style="background-color: #f8f9fa; border-top: 2px solid #ddd;">
+        <h5>
+            <strong>
+                <a href="index.html" style="text-decoration: none; color: #007bff; transition: 0.3s;">
+                    Faqja kryesore
+                </a>
+            </strong>
+        </h5>
+        <button onclick="showLogin()">Log In</button>
+    </footer>
+
+    <div class="login-box" id="loginBox">
+        <h2>Hyr</h2>
+        <label for="username">Përdoruesi:</label>
+        <input type="text" id="username" required>
+        <br>
+        <label for="password">Fjalëkalimi:</label>
+        <input type="password" id="password" required>
+        <br>
+        <button onclick="checkLogin()">Submit</button>
+        <button onclick="hideLogin()">Mbyll</button>
+    </div>
+
+    <script>
+        function showLogin() {
+            document.getElementById('loginBox').style.display = 'block';
+        }
+        
+        function hideLogin() {
+            document.getElementById('loginBox').style.display = 'none';
+        }
+        
+        function checkLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === '1234') {
+                window.location.href = 'index6.html'; // Ridrejtim tek faqja që dëshiron
+            } else {
+                alert('Kredenciale të gabuara!');
+            }
+        }
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+      
+        const firebaseConfig = {
+          apiKey: "AIzaSyCF7201SHjSLnYZJDOTxmIWUYR0IWvSBbo",
+          authDomain: "projektipacientet.firebaseapp.com",
+          projectId: "projektipacientet",
+          storageBucket: "projektipacientet.appspot.com",
+          messagingSenderId: "214496358308",
+          appId: "1:214496358308:web:cc0ce4e11e4209a317db31",
+          measurementId: "G-D5KM3YMB1S"
+        };
+      
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+      
+        document.getElementById("patientForm").addEventListener("submit", async function(event) {
+          event.preventDefault();
+      
+          const nameInput = document.getElementById("name").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const phone = document.getElementById("telefon").value.trim();
+          const date = document.getElementById("date").value;
+          const time = document.getElementById("time").value;
+          const visitType = document.getElementById("lloji_vizites").value;
+      
+          const nameParts = nameInput.split(" ");
+          const surname = nameParts.pop();
+          const firstName = nameParts.join(" ");
+      
+          try {
+            await addDoc(collection(db, "pacientet"), {
+              name: firstName,
+              surname: surname,
+              email: email,
+              phone: phone,
+              date: date,
+              time: time,
+              visitType: visitType
+            });
+      
+            addPatient(firstName, surname, email, phone, date, time, visitType);
+            document.getElementById("patientForm").reset();
+            // Mund të zëvendësosh me showToast("Pacienti u regjistrua me sukses!");
+            alert("Pacienti u regjistrua me sukses!");
+          } catch (error) {
+            console.error("Gabim gjatë regjistrimit:", error);
+            alert("Gabim gjatë regjistrimit.");
+          }
+        });
+      
+        function addPatient(name, surname, email, phone, date, time, visitType) {
+          const table = document.getElementById("patientList");
+          const row = table.insertRow();
+      
+          row.insertCell(0).textContent = name;
+          row.insertCell(1).textContent = surname;
+          row.insertCell(2).textContent = email;
+          row.insertCell(3).textContent = phone;
+          row.insertCell(4).textContent = date;
+          row.insertCell(5).textContent = time;
+          row.insertCell(6).textContent = visitType;
+      
+          const actionsCell = row.insertCell(7);
+      
+          const editButton = document.createElement("button");
+          editButton.className = "btn btn-warning btn-sm";
+          editButton.textContent = "Edito";
+          editButton.onclick = function () { editPatient(row); };
+      
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn btn-danger btn-sm";
+          deleteButton.textContent = "Fshi";
+          deleteButton.onclick = function () { row.remove(); };
+      
+          actionsCell.appendChild(editButton);
+          actionsCell.appendChild(deleteButton);
+        }
+      
+        function editPatient(row) {
+          const name = prompt("Shkruani emrin e ri:", row.cells[0].textContent);
+          const surname = prompt("Shkruani mbiemrin e ri:", row.cells[1].textContent);
+          const email = prompt("Shkruani emailin e ri:", row.cells[2].textContent);
+          const phone = prompt("Shkruani numrin e ri të telefonit:", row.cells[3].textContent);
+          const date = prompt("Shkruani datën e re:", row.cells[4].textContent);
+          const time = prompt("Shkruani orën e re:", row.cells[5].textContent);
+          const visitType = prompt("Shkruani llojin e ri të vizitës:", row.cells[6].textContent);
+      
+          if (name && surname && email && phone && date && time && visitType) {
+            row.cells[0].textContent = name;
+            row.cells[1].textContent = surname;
+            row.cells[2].textContent = email;
+            row.cells[3].textContent = phone;
+            row.cells[4].textContent = date;
+            row.cells[5].textContent = time;
+            row.cells[6].textContent = visitType;
+          }
+        }
+      </script>      
+</body>
+</html>
+

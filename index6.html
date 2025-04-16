@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Regjistrimi i Pacientëve</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,500,700" rel="stylesheet">
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="d-flex justify-content-end mt-3">
+    <button id="logoutBtn">Dil (Log Out)</button>
+  </div>
+  
+  <div class="container mt-5">
+    <h3><strong>Regjistrohu si pacient</strong></h3>
+    <form id="patientForm">
+      <div class="form-group">
+        <input type="text" id="name" class="form-control" placeholder="Emri dhe Mbiemri" required>
+      </div>
+      <div class="form-group">
+        <input type="email" id="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="form-group">
+        <input type="tel" id="telefon" class="form-control" placeholder="Numri i telefonit" required>
+      </div>
+      <div class="form-group">
+        <input type="date" id="date" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <input type="time" id="time" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <select id="lloji_vizites" class="form-control" required>
+          <option value="">Zgjidh llojin e vizitës</option>
+          <option value="Konsultë">Vizita mjekësore</option>
+          <option value="Analiza_Lab">Analiza Laboratorike</option>
+          <option value="Radiografi">Radiografi</option>
+          <option value="Ekografi">Ekografi</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Rezervo Takimin</button>
+    </form>
+    <div id="successMessage" class="alert alert-success mt-3" style="display:none;">
+      Pacienti u regjistrua me sukses!
+    </div>
+  </div>
+
+  <!-- Dashboard me tabelën -->
+  <div class="container mt-5">
+    <h4><strong>Lista e Pacientëve</strong></h4>
+    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Kërko pacient...">
+    <div id="patientsTableContainer"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF7201SHjSLnYZJDOTxmIWUYR0IWvSBbo",
+      authDomain: "projektipacientet.firebaseapp.com",
+      projectId: "projektipacientet",
+      storageBucket: "projektipacientet.firebasestorage.app",
+      messagingSenderId: "214496358308",
+      appId: "1:214496358308:web:cc0ce4e11e4209a317db31",
+      measurementId: "G-D5KM3YMB1S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let allPatients = [];
+
+    // Regjistrimi i pacientit
+    document.getElementById("patientForm").addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const name = document.getElementById("name").value;
+      const surname = name.split(" ").slice(-1)[0];
+      const firstName = name.replace(surname, "").trim();
+      const email = document.getElementById("email").value;
+      const phone = document.getElementById("telefon").value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const visitType = document.getElementById("lloji_vizites").value;
+
+      try {
+        await addDoc(collection(db, "pacientet"), {
+          name: firstName,
+          surname: surname,
+          email: email,
+          phone: phone,
+          date: date,
+          time: time,
+          visitType: visitType
+        });
+
+        document.getElementById("patientForm").reset();
+        document.getElementById("successMessage").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("successMessage").style.display = "none";
+        }, 3000);
+
+        loadPatients();
+      } catch (error) {
+        console.error("Gabim gjatë regjistrimit:", error);
+        alert("Gabim gjatë regjistrimit.");
+      }
+    });
+
+    async function loadPatients() {
+      const querySnapshot = await getDocs(collection(db, "pacientet"));
+      allPatients = [];
+      querySnapshot.forEach((docSnap) => {
+        allPatients.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderTable(allPatients);
+    }
+
+    function renderTable(data) {
+      let tableHTML = `
+        <table class="table table-bordered mt-4">
+          <thead>
+            <tr>
+              <th>Emri</th>
+              <th>Mbiemri</th>
+              <th>Email</th>
+              <th>Telefoni</th>
+              <th>Data</th>
+              <th>Ora</th>
+              <th>Lloji i Vizitës</th>
+              <th>Veprime</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      data.forEach((p) => {
+        tableHTML += `
+          <tr>
+            <td><input class="form-control" value="${p.name}" id="name-${p.id}"></td>
+            <td><input class="form-control" value="${p.surname}" id="surname-${p.id}"></td>
+            <td><input class="form-control" value="${p.email}" id="email-${p.id}"></td>
+            <td><input class="form-control" value="${p.phone}" id="phone-${p.id}"></td>
+            <td><input type="date" class="form-control" value="${p.date}" id="date-${p.id}"></td>
+            <td><input type="time" class="form-control" value="${p.time}" id="time-${p.id}"></td>
+            <td><input class="form-control" value="${p.visitType}" id="visit-${p.id}"></td>
+            <td>
+              <button class="btn btn-sm btn-warning mb-1" onclick="updatePatient('${p.id}')">Edito</button>
+              <button class="btn btn-sm btn-danger" onclick="deletePatient('${p.id}')">Fshi</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableHTML += `</tbody></table>`;
+      document.getElementById("patientsTableContainer").innerHTML = tableHTML;
+    }
+
+    async function deletePatient(id) {
+      if (confirm("A jeni i sigurt që doni të fshini këtë pacient?")) {
+        await deleteDoc(doc(db, "pacientet", id));
+        loadPatients();
+      }
+    }
+
+    async function updatePatient(id) {
+      const updatedData = {
+        name: document.getElementById(`name-${id}`).value,
+        surname: document.getElementById(`surname-${id}`).value,
+        email: document.getElementById(`email-${id}`).value,
+        phone: document.getElementById(`phone-${id}`).value,
+        date: document.getElementById(`date-${id}`).value,
+        time: document.getElementById(`time-${id}`).value,
+        visitType: document.getElementById(`visit-${id}`).value
+      };
+      await updateDoc(doc(db, "pacientet", id), updatedData);
+      alert("Të dhënat u përditësuan me sukses!");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allPatients.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.surname.toLowerCase().includes(term) ||
+        p.email.toLowerCase().includes(term)
+      );
+      renderTable(filtered);
+    });
+
+    // Ngarko pacientët në fillim
+    loadPatients();
+    window.deletePatient = deletePatient;
+    window.updatePatient = updatePatient;
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+  // Nëse më vonë shton Firebase Auth, mund të përdorësh signOut këtu
+  window.location.href = "index.html"; // Ridrejto tek faqja kryesore
+});
+
+  </script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF7201SHjSLnYZJDOTxmIWUYR0IWvSBbo",
+      authDomain: "projektipacientet.firebaseapp.com",
+      projectId: "projektipacientet",
+      storageBucket: "projektipacientet.appspot.com",
+      messagingSenderId: "214496358308",
+      appId: "1:214496358308:web:cc0ce4e11e4209a317db31",
+      measurementId: "G-D5KM3YMB1S"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+  
+    async function fetchPatients() {
+      const querySnapshot = await getDocs(collection(db, "pacientet"));
+      const table = document.getElementById("patientList");
+      table.innerHTML = ""; // Pastro tabelën përpara se të shtosh të dhënat
+  
+      querySnapshot.forEach((doc) => {
+        const patient = doc.data();
+        const row = table.insertRow();
+        row.insertCell(0).textContent = patient.name;
+        row.insertCell(1).textContent = patient.surname;
+        row.insertCell(2).textContent = patient.email;
+        row.insertCell(3).textContent = patient.phone;
+        row.insertCell(4).textContent = patient.date;
+        row.insertCell(5).textContent = patient.time;
+        row.insertCell(6).textContent = patient.visitType;
+      });
+    }
+  
+    fetchPatients();
+  </script>
+  
+</body>
+</html>
+
